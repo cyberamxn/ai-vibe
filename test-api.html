@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - GLM 4.5</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 GLM 4.5 API Integration Test</h1>
+
+        <div id="config-test" class="test-result info">
+            <strong>Configuration Test:</strong> Checking API configuration...
+        </div>
+
+        <div id="api-test" class="test-result info">
+            <strong>API Test:</strong> Ready to test API connection
+        </div>
+
+        <button onclick="testConfiguration()">Test Configuration</button>
+        <button onclick="testAPI()">Test API Call</button>
+        <button onclick="testSystemMessage()">Test System Message</button>
+
+        <div id="response"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="openRouterClient.js"></script>
+    <script>
+        function testConfiguration() {
+            const configDiv = document.getElementById('config-test');
+
+            try {
+                // Test if CONFIG is loaded
+                if (typeof CONFIG === 'undefined') {
+                    throw new Error('CONFIG object not found');
+                }
+
+                // Test API key
+                if (!CONFIG.OPEN_ROUTER_API_KEY || CONFIG.OPEN_ROUTER_API_KEY === 'YOUR_OPEN_ROUTER_API_KEY_HERE') {
+                    throw new Error('API key not configured');
+                }
+
+                // Test other config values
+                const tests = [
+                    { key: 'OPEN_ROUTER_ENDPOINT', expected: 'https://openrouter.ai/api/v1/chat/completions' },
+                    { key: 'DEFAULT_MODEL', expected: 'openai/gpt-3.5-turbo' },
+                    { key: 'SYSTEM_MESSAGE', expected: 'You are GLM 4.5, a helpful AI assistant.' }
+                ];
+
+                let results = [];
+                tests.forEach(test => {
+                    if (CONFIG[test.key] === test.expected) {
+                        results.push(`✅ ${test.key}: ${CONFIG[test.key]}`);
+                    } else {
+                        results.push(`❌ ${test.key}: Expected "${test.expected}", got "${CONFIG[test.key]}"`);
+                    }
+                });
+
+                configDiv.className = 'test-result success';
+                configDiv.innerHTML = `<strong>Configuration Test: PASSED</strong><br>${results.join('<br>')}`;
+
+            } catch (error) {
+                configDiv.className = 'test-result error';
+                configDiv.innerHTML = `<strong>Configuration Test: FAILED</strong><br>Error: ${error.message}`;
+            }
+        }
+
+        async function testAPI() {
+            const apiDiv = document.getElementById('api-test');
+            const responseDiv = document.getElementById('response');
+
+            apiDiv.className = 'test-result info';
+            apiDiv.innerHTML = '<strong>API Test:</strong> Testing API connection...';
+            responseDiv.innerHTML = 'Sending test message to GLM 4.5...';
+
+            try {
+                const testMessages = [
+                    { role: 'user', content: 'Hello, please introduce yourself briefly.' }
+                ];
+
+                const response = await openRouterClient.sendChatMessage(testMessages);
+                const botMessage = openRouterClient.extractMessageContent(response);
+
+                apiDiv.className = 'test-result success';
+                apiDiv.innerHTML = '<strong>API Test: PASSED</strong><br>✅ Successfully connected to OpenRouter API';
+
+                responseDiv.innerHTML = `<strong>GLM 4.5 Response:</strong>\n${botMessage}\n\n<strong>API Response Details:</strong>\nModel: ${response.model}\nUsage: ${JSON.stringify(response.usage, null, 2)}`;
+
+            } catch (error) {
+                apiDiv.className = 'test-result error';
+                apiDiv.innerHTML = `<strong>API Test: FAILED</strong><br>❌ Error: ${error.message}`;
+                responseDiv.innerHTML = `Error details: ${error.message}`;
+            }
+        }
+
+        async function testSystemMessage() {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = 'Testing system message functionality...';
+
+            try {
+                const testMessages = [
+                    { role: 'user', content: 'What is your name and what are you?' }
+                ];
+
+                const response = await openRouterClient.sendChatMessage(testMessages);
+                const botMessage = openRouterClient.extractMessageContent(response);
+
+                responseDiv.innerHTML = `<strong>System Message Test:</strong>\nQuestion: "What is your name and what are you?"\n\n<strong>GLM 4.5 Response:</strong>\n${botMessage}\n\n<strong>Expected:</strong> The response should identify as "GLM 4.5" based on the system message.`;
+
+            } catch (error) {
+                responseDiv.innerHTML = `System Message Test Failed: ${error.message}`;
+            }
+        }
+
+        // Auto-run configuration test on page load
+        window.onload = function () {
+            testConfiguration();
+        };
+    </script>
+</body>
+
+</html>
